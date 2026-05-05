@@ -1,98 +1,176 @@
-import hashlib 
+import hashlib
 import time
 
+# ---------------- BLOCKCHAIN ---------------- #
 class Block:
-def __init__(self,index ,voter_id,previous_hash): 
-self.index=index
-self.timestamp=time.time()
-self.voter_id=voter_id
-self.vote=vote
-self.previous_hash=previous_hash
-self.hash=self.calculate_hash()
+    def __init__(self, index, timestamp, data, previous_hash):
+        self.index = index
+        self.timestamp = timestamp
+        self.data = data
+        self.previous_hash = previous_hash
+        self.hash = self.calculate_hash()
 
+    def calculate_hash(self):
+        block_string = str(self.index) + str(self.timestamp) + str(self.data) + str(self.previous_hash)
+        return hashlib.sha256(block_string.encode()).hexdigest()
 
-def calculate_hash(self):
-value = str(self.index) + str(self.timestamp) + self.voter_id + self.voter+self.previous_hash
-return hashlib.sha256(value.encode()).hexdigest() 
 
 class Blockchain:
-def __init__(self):
-self.chain = [self.create_genesis_block()]
-self.voter = set()
-self.candidates = set()
+    def __init__(self):
+        self.chain = [self.create_genesis_block()]
 
-def create_genesis_block(self):
-return Block(0,"Genesis","None","0")
+    def create_genesis_block(self):
+        return Block(0, time.time(), "Genesis Block", "0")
 
-def get_latest_block(self):
-return self.chain[-1]
-def add_candidate(self,candidate_name):
-if candidate_name not in self.candidates:
-print("Candidate not found")
-return False
+    def get_latest_block(self):
+        return self.chain[-1]
 
-if voter_id in self.voters:
-print("Voter Already voted")
-return False
+    def add_block(self, data):
+        prev_block = self.get_latest_block()
+        new_block = Block(len(self.chain), time.time(), data, prev_block.hash)
+        self.chain.append(new_block)
 
-latest_block=self.get_latest_block()
-new_block=Block(len(self.chain),voter_id,candidate_name,latest_block.hash)
-self.chain.append(new_block)
-self.voters.add(voter_id)
-print(f"Vote cast successfully for {candidate_name} by {voter_id}")
-return True
+    def print_chain(self):
+        for block in self.chain:
+            print("\n----------------------")
+            print(f"Index: {block.index}")
+            print(f"Time: {block.timestamp}")
+            print(f"Data: {block.data}")
+            print(f"Previous Hash: {block.previous_hash}")
+            print(f"Hash: {block.hash}")
 
-def is_chain_valid(self):
-for i in range(1, len(self.chain)):
-current_block=self.chain[i]
-previous_blockchain=self.chain[i-1]
+    def is_valid(self):
+        for i in range(1, len(self.chain)):
+            curr = self.chain[i]
+            prev = self.chain[i - 1]
 
-if current.hash!=current.calculate_hash():
-return false
+            if curr.hash != curr.calculate_hash():
+                return False
 
-if current.previous_hash !=prev.hash:
-return False
-return True
+            if curr.previous_hash != prev.hash:
+                return False
+
+        return True
 
 
-def count_voter(self):
-
-results={}
-
-for candidate  in   self.candidates:
-results[candidate]=0
-for block in self.chain[1:]:
-results[block.vote]+=1
-return results
-
-if __name__==" __main__":
-blockchain = Blockchain()
-blockchain.add_candidate("Candidate A")
-blockchain.add_candidate("Candidate B")
-
-blockchain.cast_vote("voter1", "Candidate A")
-blockchain.cast_vote("voter2", "Candidate B")
-blockchain.cast_vote("voter1", "Candidate A")
-
-print("\nBlockchain valid:", blockchain.is_chain_valid()) 
+# ---------------- ENTITIES ---------------- #
+class Voter:
+    def __init__(self, voter_id, name):
+        self.voter_id = voter_id
+        self.name = name
+        self.has_voted = False
 
 
-print("\nVote Counts:")
-for candidate,count in blockchain.count_votes().items():
-print(f"{caandidate}:{count}")
-
-print("\n Blockchain contents:")
-
-for block in bc.chain:
-print(f"Index: {block.index}")
-print(f"Timestamp: {block.timestamp}")
-print(f"Voter ID: {block.voter_id}")
-print(f"Vote:  {block.vote}")
-print(f"Hash: {block.hash[:10]}...")
-print("-" * 40)
+class Candidate:
+    def __init__(self, candidate_id, name):
+        self.candidate_id = candidate_id
+        self.name = name
 
 
+# ---------------- SYSTEM ---------------- #
+class VotingSystem:
+    def __init__(self):
+        self.voters = {}
+        self.candidates = {}
+        self.blockchain = Blockchain()
+
+    def add_voter(self):
+        voter_id = input("Enter Voter ID: ")
+
+        if voter_id in self.voters:
+            print("❌ Voter ID already exists!")
+            return
+
+        name = input("Enter Name: ")
+        self.voters[voter_id] = Voter(voter_id, name)
+        print("✅ Voter added successfully!")
+
+    def add_candidate(self):
+        candidate_id = input("Enter Candidate ID: ")
+
+        if candidate_id in self.candidates:
+            print("❌ Candidate ID already exists!")
+            return
+
+        name = input("Enter Name: ")
+        self.candidates[candidate_id] = Candidate(candidate_id, name)
+        print("✅ Candidate added successfully!")
+
+    def cast_vote(self):
+        voter_id = input("Enter Voter ID: ")
+
+        if voter_id not in self.voters:
+            print("❌ Voter not found!")
+            return
+
+        voter = self.voters[voter_id]
+
+        if voter.has_voted:
+            print("❌ This voter has already voted!")
+            return
+
+        print("\nCandidates:")
+        for cid, c in self.candidates.items():
+            print(f"{cid} - {c.name}")
+
+        candidate_id = input("Enter Candidate ID to vote: ")
+
+        if candidate_id not in self.candidates:
+            print("❌ Invalid candidate!")
+            return
+
+        # Create vote transaction
+        vote_data = {
+            "voter_id": voter_id,
+            "candidate_id": candidate_id
+        }
+
+        self.blockchain.add_block(vote_data)
+        voter.has_voted = True
+
+        print("✅ Vote cast successfully!")
+
+    def print_blockchain(self):
+        self.blockchain.print_chain()
+
+    def validate_chain(self):
+        if self.blockchain.is_valid():
+            print("✅ Blockchain is valid!")
+        else:
+            print("❌ Blockchain is NOT valid!")
 
 
+# ---------------- MENU ---------------- #
+def main():
+    system = VotingSystem()
+
+    while True:
+        print("\n====== Voting System Menu ======")
+        print("1. Add Candidate")
+        print("2. Add Voter")
+        print("3. Cast Vote")
+        print("4. Print Blockchain")
+        print("5. Validate Blockchain")
+        print("6. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            system.add_candidate()
+        elif choice == "2":
+            system.add_voter()
+        elif choice == "3":
+            system.cast_vote()
+        elif choice == "4":
+            system.print_blockchain()
+        elif choice == "5":
+            system.validate_chain()
+        elif choice == "6":
+            print("Exiting...")
+            break
+        else:
+            print("❌ Invalid choice!")
 
 
+if __name__ == "__main__":
+    main()
